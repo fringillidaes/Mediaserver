@@ -1,7 +1,7 @@
 # Mediaserver
 This is a sort of do it yourself guide to migrating your cloudbox setup to an all in one docker-compose setup. This is mainly targeted at people who have found their suite of apps that they need and have gained Linux and docker experience using it. This is targeted at a Usenet setup. 
 
-# Prerequesets
+# Prerequisites
 You will need: 
   - Some dedicated server running ubuntu 18.04. (Could technically run any other OS but directions may not translate over.)
   - SSH client.
