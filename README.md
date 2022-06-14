@@ -117,6 +117,13 @@ network:
           - 2001:4860:4860::8888
           - 2001:4860:4860::8844
 ```
+And finally we need to add our user to the docker group so we can access the docker daemon without root/sudo. 
+```
+sudo groupadd docker
+sudo usermod -aG docker tristen
+```
+You will need to exit your shell and relogin to be able to manage docker. 
+
 
 # Restore cloudbox backup
 Now use rclone to download your backup to the /opt directory. 
