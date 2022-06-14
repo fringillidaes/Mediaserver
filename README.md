@@ -1,9 +1,9 @@
 # Mediaserver
-This is a sort of do it yourself guide to migrating your cloudbox setup to an all in one docker-compose setup. This is mainly targeted at people who have found their suite of apps that they need and have gained Linux and docker experience using it. This is targeted at a Usenet setup. 
+This is a sort of do it yourself guide to migrating your cloudbox setup to an all in one docker-compose setup. This is mainly targeted at people who have found their suite of apps that they need and have gained Linux and docker experience using it. This is targeted at a Usenet setup while a plex torrent setup is in the works. 
 
 # Prerequisites
 You will need: 
-  - Some dedicated server running ubuntu 18.04. (Could technically run any other OS but directions may not translate over.)
+  - Some dedicated server running Ubuntu 22.04 LTS. (Could technically run any other OS but directions may not translate over.)
   - SSH client.
   - Clean install.
 
@@ -15,7 +15,7 @@ SWRAIDLEVEL 0
 DRIVE1 /dev/nvme0n1
 DRIVE2 /dev/nvme1n1
 HOSTNAME mediaserver
-PART /boot  ext4     512M
+PART /boot  ext4     2G
 PART lvm    vg0       all
 LV vg0   swap   swap     swap          16G
 LV vg0   opt    /opt     btrfs      250G
@@ -26,37 +26,36 @@ IMAGE /root/.oldroot/nfs/install/../images/Ubuntu-1804-bionic-64-minimal.tar.gz
 # Make your paths
 Cloudbox has alot of paths assigned to its service files and docker containers. We can translate this over to this fresh installation by doing the following,
 ```bash
-sudo mkdir /mnt
-sudo chown -R $user:$user /mnt
-sudo mkdir /mnt/unionfs
-sudo chown -R $user:$user /mnt/unionfs
 sudo mkdir /mnt/local
-sudo chown -R $user:$user /mnt/local
 sudo mkdir /mnt/local/transcode
-sudo chown -R $user:$user /mnt/local/transcode
 sudo mkdir /mnt/local/transcode/jellyfin
-sudo chown -R $user:$user /mnt/local/transcode/jellyfin
 sudo mkdir /mnt/local/downloads
-sudo chown -R $user:$user /mnt/local/downloads
 sudo mkdir /mnt/local/downloads/nzbs
-sudo chown -R $user:$user /mnt/local/downloads/nzbs
 sudo mkdir /mnt/local/Media
-sudo chown -R $user:$user /mnt/local/Media
 sudo mkdir /mnt/local/Media/Movies
-sudo chown -R $user:$user /mnt/local/Media/Movies
-sudo mkdir /mnt/local/Media/Music
-sudo chown -R $user:$user /mnt/local/Media/Music
 sudo mkdir /mnt/local/Media/TV
-sudo chown -R $user:$user /mnt/local/Media/TV
+sudo mkdir /mnt/unionfs
+sudo mkdir /mnt/unionfs/transcode
+sudo mkdir /mnt/unionfs/transcode/jellyfin
+sudo mkdir /mnt/unionfs/downloads
+sudo mkdir /mnt/unionfs/downloads/nzbs
+sudo mkdir /mnt/unionfs/downloads/downloads-amd
+sudo mkdir /mnt/unionfs/Media
+sudo mkdir /mnt/unionfs/Media/Movies
+sudo mkdir /mnt/unionfs/Media/TV
 sudo mkdir /mnt/remote
-sudo chown -R $user:$user /mnt/remote 
+sudo mkdir /mnt/remote/Media
+sudo mkdir /mnt/remote/Media/Movies
+sudo mkdir /mnt/remote/Media/TV
+sudo chown -R $user:$user /mnt
 ``` 
 
 # Dependency time
 Let's update the system and install some prerequisite packages. (these might be reduced? idk most are from the cloudbox dependency list.)
 ```
 sudo apt-get update -y && sudo apt-get upgrade -y
-sudo apt-get install rclone mergerfs nano zip unzip curl sqlite3 tree lsof man-db git pwgen rsync logrotate htop iotop nload fail2ban ufw ncdu mc dnsutils screen tmux jq moreutils unrar nodejs iperf3
+curl https://rclone.org/install.sh | sudo bash -s beta
+sudo apt-get install mergerfs nano zip unzip curl sqlite3 tree lsof man-db git pwgen rsync logrotate htop iotop nload fail2ban ufw ncdu mc dnsutils screen tmux jq moreutils unrar nodejs iperf3
 ```
 
 # Restore cloudbox backup
@@ -71,7 +70,14 @@ find . -name "*.tar" -maxdepth 1 -exec sudo tar -xvf {} \;
 sudo find . -name "*.tar" -maxdepth 1 -exec sudo rm -f {} \;
 ```
 ```
-# i needed sudo when working in my /opt directory due to the user not having permissions. my fucked up way to undo this was (but beware do not do this on either nginx folders.)
+# i needed sudo when working in my /opt directory due to the user not having permissions.
 sudo find . -maxdepth 1 -exec sudo chown -R $user:user {} \;
 ```
+
+# Trim the backup
+Now delete any directories you dont use anymore. You can delete both nginx and letsencrypt folders since we will be using caddy instead for the reverse proxy
+```
+rm -rf /opt/appname
+```
+
 
