@@ -1,0 +1,159 @@
+version: "3.9"
+   
+services:
+  caddy:
+    image: lucaslorentz/caddy-docker-proxy:ci-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/opt/caddy_data:/data"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - CADDY_INGRESS_NETWORKS=media
+    networks:
+      - media
+
+  radarr:
+    container_name: radarr
+    image: linuxserver/radarr:nightly
+    restart: unless-stopped
+    volumes:
+      - "/opt/radarr/:/config"
+      - "/opt/scripts:/scripts"
+      - "/mnt:/mnt"
+      - "/mnt/unionfs/Media/Movies:/movies"
+      - "/mnt/local/downloads/nzbs:/downloads/nzbs"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="${TIMEZONE}"
+    labels:
+      caddy: "radarr.${DOMAIN}"
+      caddy.reverse_proxy: "{{upstreams 7878}}"
+    networks:
+      - media
+
+  sonarr:
+    container_name: sonarr
+    image: linuxserver/sonarr:latest
+    restart: unless-stopped
+    volumes:
+      - "/opt/sonarr:/config"
+      - "/opt/scripts:/scripts"
+      - "/mnt:/mnt"
+      - "/mnt/unionfs/Media/TV:/tv"
+      - "/etc/localtime:/etc/localtime:ro"
+      - "/mnt/local/downloads/nzbs:/downloads/nzbs"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="${TIMEZONE}"
+    labels:
+      caddy: "sonarr.${DOMAIN}"
+      caddy.reverse_proxy: "{{upstreams 8989}}"
+    networks:
+      - media
+
+  nzbhydra2:
+    container_name: nzbhydra2
+    image: linuxserver/nzbhydra2:latest
+    restart: unless-stopped
+    volumes:
+      - "/opt/nzbhydra2/:/config"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="${TIMEZONE}"
+    labels:
+      caddy: "nzbhydra2.${DOMAIN}"
+      caddy.reverse_proxy: "{{upstreams 5076}}"
+    networks:
+      - media
+
+  nzbget:
+    container_name: nzbget
+    image: linuxserver/nzbget:latest
+    restart: unless-stopped
+    volumes:
+      - "/opt/nzbget:/config"
+      - "/opt/scripts:/scripts"
+      - "/mnt/local/downloads/nzbs:/downloads/nzbs"
+      - "/mnt:/mnt"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="${TIMEZONE}"
+    labels:
+      caddy: "nzbget.${DOMAIN}"
+      caddy.reverse_proxy: "{{upstreams 6789}}"
+    networks:
+      - media
+
+  overseerr:
+    container_name: overseerr
+    image: sctx/overseerr
+    restart: unless-stopped
+    volumes:
+      - "/opt/overseerr:/app/config"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="${TIMEZONE}"
+    labels:
+      caddy: "r.${DOMAIN}"
+      caddy.reverse_proxy: "{{upstreams 5055}}"
+    networks:
+      - media
+
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:latest
+    restart: unless-stopped
+    volumes:
+      - "/opt/portainer/:/data"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="${TIMEZONE}"
+    labels:
+      caddy: "portainer.${DOMAIN}"
+      caddy.reverse_proxy: "{{upstreams 9000}}"
+    networks:
+      - media
+
+  jellyfin:
+    container_name: jellyfin
+    image: linuxserver/jellyfin:latest
+    restart: unless-stopped
+    volumes:
+      - "/opt/jellyfinmain:/config"
+      - "/opt/scripts:/scripts"
+      - "/mnt:/mnt"
+      - "/mnt/unionfs/Media:/media"
+      - "/mnt/unionfs/Media:/data"
+      - "/mnt/local/transcode/jellyfin:/transcode"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ="${TIMEZONE}"
+    devices:
+      - "/dev/dri:/dev/dri"
+    labels:
+      caddy: "jellyfin.${DOMAIN}"
+      caddy.reverse_proxy: "{{upstreams 8096}}"
+    networks:
+      - media
+
+networks:
+  media:
+    external: true
