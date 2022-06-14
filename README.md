@@ -50,12 +50,72 @@ sudo mkdir /mnt/remote/Media/TV
 sudo chown -R $user:$user /mnt
 ``` 
 
-# Dependency time
-Let's update the system and install some prerequisite packages. (these might be reduced? idk most are from the cloudbox dependency list.)
+# Basic System Setup.
+We need to do a few things before we start restoring our server to the previous state. We need to recreate the same useraccount we had on cloudbox, if your name was tristen, your username needs to be tristen on this server for the sake of simplicity. To do this run the following (Obviously replace tristen with what your username is for both commands),
 ```
+adduser tristen
+# fill out the information from this ^
+usermod -aG sudo tristen
+```
+
+# Dependency time
+Let's update the system and install some prerequisite packages. These include rclone and docker. Adjust according to your setup if your deviating. (these might be reduced? idk most are from the cloudbox dependency list.)
+```
+# Upgrade from base install.
 sudo apt-get update -y && sudo apt-get upgrade -y
+
+# Installing Docker.
+sudo apt-get install ca-certificates curl gnupg lsb-release
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update && sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# Installing Rclone.
 curl https://rclone.org/install.sh | sudo bash -s beta
-sudo apt-get install mergerfs nano zip unzip curl sqlite3 tree lsof man-db git pwgen rsync logrotate htop iotop nload fail2ban ufw ncdu mc dnsutils screen tmux jq moreutils unrar nodejs iperf3
+
+# Installing Other Packages. 
+sudo apt-get install mergerfs nano zip unzip sqlite3 tree lsof man-db git pwgen rsync logrotate htop iotop nload fail2ban ufw ncdu mc dnsutils screen tmux jq moreutils unrar nodejs iperf3
+```
+Now we need to change our DNS servers for Usenet since hetzners have some issues from the past. 
+```
+sudo nano /etc/netplan/01-netcfg.yaml
+```
+You are going to modify under `addresses:` to the following,
+```
+        - 1.1.1.1
+        - 1.0.0.1
+        - 8.8.8.8
+        - 8.8.4.4
+        - 2001:4860:4860::8888
+        - 2001:4860:4860::8844
+```
+It should look something like this (note yours will obviously have different values.),
+```
+### Hetzner Online GmbH installimage
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp0s31f6:
+      addresses:
+        - 666.666.666.666/32
+        - 2a69:2a69:2a69:2a69::6/64
+      routes:
+        - on-link: true
+          to: 0.0.0.0/0
+          via: 666.666.666.666
+      gateway6: je666::66
+      nameservers:
+        addresses:
+          - 1.1.1.1
+          - 1.0.0.1
+          - 8.8.8.8
+          - 8.8.4.4
+          - 2001:4860:4860::8888
+          - 2001:4860:4860::8844
 ```
 
 # Restore cloudbox backup
